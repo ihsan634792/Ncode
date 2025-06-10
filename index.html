@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ncode Supreme Editor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      background: #0e0e0e;
+      font-family: 'Fira Code', monospace;
+      color: #ccc;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 60px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 12px;
+      transition: width 0.3s ease;
+    }
+    .sidebar.open {
+      width: 200px;
+    }
+    .sidebar button {
+      background: none;
+      border: none;
+      margin: 14px 0;
+      cursor: pointer;
+      color: #fff;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+      padding: 8px;
+      width: 100%;
+    }
+    .sidebar button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-left: 4px solid #ff8000;
+    }
+    .sidebar button span {
+      margin-left: 12px;
+      display: none;
+    }
+    .sidebar.open button span {
+      display: inline;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .topbar {
+      height: 45px;
+      background: #121212;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: #ff8000;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #222;
+    }
+    .editorArea {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .tabs {
+      background: #1c1c1c;
+      padding: 6px;
+      display: flex;
+    }
+    .tabs div {
+      background: #282828;
+      color: #ccc;
+      padding: 6px 16px;
+      margin-right: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .tabs div.active {
+      background: #ff8000;
+      color: black;
+    }
+    textarea {
+      flex: 1;
+      background: #0e0e0e;
+      color: #00ff7f;
+      border: none;
+      padding: 16px;
+      font-size: 16px;
+      font-family: 'Fira Code', monospace;
+      resize: none;
+      outline: none;
+      overflow-y: scroll;
+    }
+    textarea::-webkit-scrollbar {
+      width: 10px;
+    }
+    textarea::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 5px;
+    }
+    .preview {
+      width: 45%;
+      border-left: 1px solid #222;
+      background: white;
+    }
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+    .bottombar {
+      height: 30px;
+      background: #121212;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 14px;
+      justify-content: space-between;
+    }
+    .btn-glow {
+      background: #ff8000;
+      color: black;
+      border: none;
+      padding: 6px 12px;
+      margin-left: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 0 8px #ff8000;
+      transition: all 0.2s;
+    }
+    .btn-glow:hover {
+      box-shadow: 0 0 16px #ff8000;
+      transform: scale(1.05);
+    }
+    .container {
+      display: flex;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar" id="sidebar">
+    <button onclick="toggleSidebar()">≡ <span>Menu</span></button>
+    <button onclick="runCode()">▶ <span>Run</span></button>
+    <button onclick="saveToLocal()">💾 <span>Save</span></button>
+    <button onclick="loadFromLocal()">📂 <span>Load</span></button>
+    <button onclick="formatCode()">✨ <span>Format</span></button>
+  </div>
+
+  <div class="main">
+    <div class="topbar">Ncode Supreme Editor</div>
+
+    <div class="tabs" id="tabs">
+      <div class="active" onclick="setActiveTab('index.html')">index.html</div>
+    </div>
+
+    <div class="editorArea">
+      <textarea id="editorArea" placeholder="Write your code here..."></textarea>
+      <div class="preview">
+        <iframe id="previewFrame"></iframe>
+      </div>
+    </div>
+
+    <div class="bottombar">
+      <div>Status: Ready</div>
+      <div>
+        <button class="btn-glow" onclick="runCode()">Run</button>
+        <button class="btn-glow" onclick="toggleSidebar()">≡</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editor = document.getElementById("editorArea");
+  const preview = document.getElementById("previewFrame");
+  const sidebar = document.getElementById("sidebar");
+  const tabs = document.getElementById("tabs");
+  let files = { "index.html": "" };
+  let activeFile = "index.html";
+
+  function runCode() {
+    files[activeFile] = editor.value;
+    preview.srcdoc = editor.value;
+  }
+
+  function saveToLocal() {
+    files[activeFile] = editor.value;
+    localStorage.setItem("ncodeSupremeProject", JSON.stringify(files));
+    alert("✅ Project saved locally!");
+  }
+
+  function loadFromLocal() {
+    const data = localStorage.getItem("ncodeSupremeProject");
+    if (data) {
+      files = JSON.parse(data);
+      updateTabs();
+      setActiveTab(Object.keys(files)[0]);
+    } else {
+      alert("⚠️ No project found!");
+    }
+  }
+
+  function formatCode() {
+    editor.value = editor.value.replace(/></g, ">\n<");
+    runCode();
+  }
+
+  function toggleSidebar() {
+    sidebar.classList.toggle("open");
+  }
+
+  function setActiveTab(name) {
+    activeFile = name;
+    document.querySelectorAll(".tabs div").forEach(t => t.classList.remove("active"));
+    const target = [...tabs.children].find(t => t.innerText === name);
+    if (target) target.classList.add("active");
+    editor.value = files[name] || "";
+    runCode();
+  }
+
+  function updateTabs() {
+    tabs.innerHTML = "";
+    for (let name in files) {
+      const tab = document.createElement("div");
+      tab.innerText = name;
+      tab.onclick = () => setActiveTab(name);
+      tabs.appendChild(tab);
+    }
+  }
+</script>
+
+</body>
+</html>
